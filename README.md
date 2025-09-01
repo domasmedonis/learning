@@ -1,2 +1,1 @@
-# learning
-Learning material made by ChatGPT
+This repository is dedicated to providing high-quality, easy-to-understand technology learning resources created with the assistance of ChatGPT. Whether you’re a beginner exploring new technologies or an experienced developer brushing up on concepts, you’ll find valuable content here.
