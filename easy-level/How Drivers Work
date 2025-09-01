@@ -75,5 +75,3 @@ The exact steps depend on the OS, but here’s the general process:
 - The driver sends configuration commands, waits for image data, and then transfers that data to the OS buffer for applications to use.
 
 ---
-
-https://chatgpt.com/s/m_68b5f1c0d8288191892d63abfb8b1192
