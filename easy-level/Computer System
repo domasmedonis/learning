@@ -1,0 +1,108 @@
+# 🖥️ Computer System: The Hourglass Model
+
+Think of the system as an hourglass:  
+Lots of apps at the top, lots of hardware at the bottom, and a narrow waist where everything standardizes so they can all interoperate.
+
+---
+
+## 📚 Layer Overview
+
+    Apps["Apps (editors, browsers, games, your programs)"]
+    Runtime["Language runtime & stdlib (Python/Java VM, libc, .NET, Node.js)"]
+    Syscall["System call interface (open, read, write, socket, ioctl…)"]
+    Kernel["Operating system kernel (scheduling, memory mgmt, filesystems, networking)"]
+    Drivers["Device drivers (NIC, GPU, storage, keyboard, I²C controllers…)"]
+    Firmware["Firmware (UEFI/BIOS, disk controller firmware, GPU/SSD firmware, microcode)"]
+    Hardware["Hardware (CPU, RAM, SSD/HDD, GPU, NIC, sensors; buses like PCIe, USB, I²C, SPI)"]
+
+
+    Apps --> Runtime --> Syscall --> Kernel --> Drivers --> Firmware --> Hardware
+
+
+---
+
+🏷️ What Each Layer Does
+
+- Apps: Your logic and UI.
+- Runtime/stdlib: Convenience wrappers (e.g., `fopen`, `socket`) and managed runtimes.
+- System calls: The only official door from user programs into the OS kernel.
+- Kernel: Referee of CPU time, memory, files, and network; exposes uniform abstractions.
+- Drivers: Per-device translators between kernel abstractions and real hardware registers.
+- Firmware: On-device software that makes the hardware usable (e.g., SSD wear leveling).
+- Hardware: The electronics doing the work; connected by buses (PCIe/USB/I²C/SPI).
+
+---
+
+🔗 How Layers Talk (Fast but Accurate)
+
+1. Function call (in your code) → into a library (e.g., `printf` → `write`).
+2. Library requests a system call (switches CPU to kernel mode via a trap instruction).
+3. Kernel validates arguments, touches the right subsystem (files, network, etc.).
+4. If hardware work is needed, the driver:
+    - Writes/reads memory-mapped registers or special I/O ports.
+    - Sets up DMA (device moves data directly to RAM).
+    - Enables interrupts so the device can say “I’m done!”
+5. When the device finishes:
+    - It raises an interrupt → kernel runs a quick handler, wakes any waiting process.
+    - You get control back in user space with a return value.
+
+---
+
+
+
+
+
+
+📖 Two “Stories” That Make the Map Stick
+
+
+
+
+### 1️⃣ From Keypress to Letter on Screen
+
+1. You press a key → keyboard’s microcontroller sends a code (USB/Bluetooth).
+2. USB/BT controller hardware receives it → triggers an interrupt.
+3. Kernel HID driver parses the scancode → posts an event to the OS input queue.
+4. Window system (Wayland/X11/Quartz/Win32) routes the event to your focused app.
+5. Your app’s GUI toolkit calls your callback (e.g., `onKeyDown('A')`).
+6. When you draw text, the graphics stack (DirectX/Vulkan/OpenGL) talks to the GPU driver → GPU renders → display scans out the frame buffer → you see “A”.
+
+Layers used:
+`app → GUI/runtime → syscalls → kernel input subsystem → HID driver → GPU driver → hardware`
+
+---
+
+
+2️⃣ From Saving a File to Bytes on Disk
+
+1. App calls `write()` → syscall into kernel.
+2. Kernel writes to the page cache (RAM) and updates your filesystem (ext4, NTFS, APFS).
+3. Filesystem code emits block I/O requests → storage driver (NVMe/SATA/USB).
+4. Driver programs the controller (often via MMIO) and sets up DMA.
+5. SSD/HDD firmware does the real work (flash translation layer, ECC, wear leveling).
+6. Device raises an interrupt to confirm completion; kernel may later flush to ensure durability (e.g., `fsync`).
+
+**Layers used:**  
+`app → libc → syscalls → VFS/filesystem → block layer → storage driver → disk firmware → hardware`
+
+
+
+
+---
+
+
+
+
+
+
+
+🗝️ Key Vocabulary (Plain-English)
+
+- User mode / Kernel mode: Two privilege levels; user mode can’t touch hardware directly.
+- System call (syscall): A controlled door into the kernel (`open`, `read`, `mmap`, `ioctl`).
+- Interrupt: Hardware’s way to asynchronously say “hey, something happened.”
+- DMA (Direct Memory Access): Device writes/reads RAM without burdening the CPU.
+- MMU & virtual memory: Hardware + kernel give each process its own address space (safety).
+- Scheduler: Chooses which thread runs next on the CPU.
+- Bus: The road that moves bits between chips (PCIe/USB on PCs; I²C/SPI inside gadgets).
+- Firmware: Software shipped inside a device (SSD, GPU, Wi-Fi card) that the OS drivers talk to.
